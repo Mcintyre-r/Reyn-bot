@@ -26,6 +26,7 @@
     "redis": "^3.0.2",
     "request-rate-limiter": "^2.0.3",
     "smart-request-balancer": "^2.1.1",
+    "voicetext": "0.0.7",
     "xivapi-js": "^0.3.0"
   }
 }

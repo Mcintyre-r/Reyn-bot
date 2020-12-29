@@ -6,13 +6,11 @@ const CronJob = require('cron').CronJob
 const movieDB = require("./models/movie-model.js");
 const viewerDB = require("./models/viewer-model.js")
 const powerDB = require("./models/power-model.js")
-// const monado = require('./assets/monado.mp4')
+const VoiceText = require('voicetext')
+const fs = require('fs')
 require('ffmpeg')
 require('ffmpeg-static')
 require('dotenv').config()
-
-
-
 
 
 // Queue for handling api requests
@@ -35,10 +33,10 @@ const queue = new Queue({
     },
     retryTime: 10,              // Default retry time, in seconds. Can be configured in retry fn
     ignoreOverallOverheat: true  // Should we ignore overheat of queue itself
-  })
+})
 
-  // Compare function to sort
-  function compare(a, b) {
+// Compare function to sort
+function compare(a, b) {
     var nameA = a.name.toUpperCase(); // ignore upper and lowercase
     var nameB = b.name.toUpperCase(); // ignore upper and lowercase
     if (nameA < nameB) {
@@ -52,13 +50,44 @@ const queue = new Queue({
     return 0
 }
 
-
 const PREFIX = '?'
 
-bot.on('ready', () =>{
+bot.on('ready', async () =>{
     console.log('Exa-Bot Online')
 })
 
+
+bot.on('raw', async (packet) => {
+    if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t) || packet.d.message_id !== '791040740268179517') return;
+    
+    const channel = await bot.channels.fetch(packet.d.channel_id);
+    const message = await channel.messages.fetch(packet.d.message_id);
+    const roles = {
+        '791016914704269317' : 'test1',
+        '751666416335192114' : 'test2',
+        '738255120554262575' : 'test3',
+    }
+    const keys = Object.keys(roles)
+
+    if(!keys.includes(packet.d.emoji.id)){
+        message.reactions.cache.each( react =>{
+            if(!keys.includes(react._emoji.id)){
+                react.remove()
+            }
+        })
+        packet.t === 'MESSAGE_REACTION_ADD' ? message.reactions.cache.get(packet.d.emoji.id).remove().catch(error => console.error('Failed to remove reactions: ', error)): null;
+        return;
+    }
+
+    const user = await message.guild.members.fetch(packet.d.user_id)
+    const role = message.guild.roles.cache.find(role => role.name === roles[packet.d.emoji.id]);
+    if(packet.t === 'MESSAGE_REACTION_ADD'){
+        user.roles.add(role)
+    } else if (packet.t === 'MESSAGE_REACTION_REMOVE'){
+        user.roles.remove(role)
+    }
+
+});
 
 const job = new CronJob('0 0 0 * * 1', async function(){
     const textChat = await bot.channels.fetch('716015727630483579')
@@ -72,16 +101,12 @@ const job = new CronJob('0 0 0 * * 1', async function(){
 //     movieChat.send('<@&761665699407200286> Movie starting in one hour!')
 // })
 
-
 job.start()
 // movieJob.start()
 
 
-
-
-
-
 bot.on('message',async req => {
+
     const attachment = new MessageAttachment('https://cdn.discordapp.com/attachments/313148981502935040/697154625815707798/image0.gif');
     const channel = await bot.channels.fetch('716015727630483580');
     const raidChannel = await bot.channels.fetch('747097374312103977')
@@ -106,7 +131,7 @@ bot.on('message',async req => {
     // list of clip names
     powerDB.checkPower().then(res => {
         if(res["Power"] === true || req.author.id === '59423394055069696'){
-            const clips = ['blade','death','butter','frog','women', 'scissors','eekum bokum','really gay','law','gay','center', 'news', 'army', 'leader', 'yeet', 'lid', 'console', 'joker', 'rainbow', 'reyn', 'head', 'good thing', 'tough', 'jump', 'ooph', 'oof', 'vsauce', 'mario','hungry', 'ride wife', 'king','love']
+            const clips = ['silence','blade','death','butter','frog','women', 'scissors','eekum bokum','really gay','law','gay','center', 'news', 'army', 'leader', 'yeet', 'lid', 'console', 'joker', 'rainbow', 'reyn', 'head', 'good thing', 'tough', 'jump', 'ooph', 'oof', 'vsauce', 'mario','hungry', 'ride wife', 'king','love']
             clips.forEach( async e =>{
                 if(message.includes(e) && req.author.id != 738254569238167643){
                     if(e === 'eekum bokum'){
@@ -187,7 +212,6 @@ bot.on('message',async req => {
     }
 })
 
-
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     const channel = await bot.channels.fetch('716015727630483580');
     const raidChannel = await bot.channels.fetch('747097374312103977');
@@ -225,6 +249,80 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     }
 })
 
+bot.on('voiceStateUpdate', async (oldMember, newMember) => {
+    const channelID = '716015727630483580'
+    const channel = await bot.channels.fetch(channelID)
+    let date = new Date().getHours()
+    if(newMember.id === '211556765492314112') date += 6
+    else if(newMember.id === '200420433118363648') date += 14
+    if(date >= 24) date-=24
+    const Morning = [5,6,7,8,9,10,11]
+    const Afternoon = [12,13,14,15,16,17,18]
+    const Evening = [19,20,21,22,23,0]
+    const Night = [1,2,3,4]
+    let phrase = ''
+    if(Morning.includes(date)) phrase = 'Ohayou'
+    if(Afternoon.includes(date)) phrase = 'Konnichiwa'
+    if(Evening.includes(date)) phrase = 'Konbanwa'
+    if(Night.includes(date)) phrase = 'Fucking go to bed'
+    // console.log(user.user.username)
+    if(newMember.channelID === channelID && oldMember.channelID !== channelID && newMember.id != '738254569238167643'){
+        const user = await newMember.guild.members.fetch(newMember.id)
+            voice = new VoiceText('sf3u5x3k31ybx269')
+            voice
+                .speaker(voice.SPEAKER.HIKARI)
+                .emotion(voice.EMOTION.HAPPINESS)
+                .emotion_level(voice.EMOTION_LEVEL.HIGH)
+                .speak(`${phrase} ${user.user.username} san   `, async (e, buf) => {
+                    if(e) console.error(e)
+                    await fs.writeFile('./tes.wav', buf, 'binary', e => console.log(e))
+                    const connection = await channel.join();
+                    const dispatcher = connection.play('tes.wav');
+                    dispatcher.on('start', () => {
+                        console.log('Playing entrance clip');
+                    });
+                    dispatcher.on('finish', () => {
+                        channel.leave()
+                    });
+                    dispatcher.on('error', console.error);
+                } )
+    }
+
+
+
+    // if(newMember.channelID === channelID && oldMember.channelID !== channelID && newMember.id === '211556765492314112'){
+
+    //     const connection = await channel.join();
+    //     const dispatcher = connection.play(`./assets/sophia.mp3`);
+
+    //     dispatcher.on('start', () => {
+    //         console.log('Playing entrance clip');
+    //     });
+
+    //     dispatcher.on('finish', () => {
+    //         channel.leave()
+    //     });
+
+    //     dispatcher.on('error', console.error);
+    // } else if (newMember.channelID === channelID && oldMember.channelID !== channelID && newMember.id === '217362661195776002'){
+    //     const connection = await channel.join();
+    //     const dispatcher = connection.play(`./assets/megumin.mp3`);
+
+    //     dispatcher.on('start', () => {
+    //         console.log('Playing entrance clip');
+    //     });
+
+    //     dispatcher.on('finish', () => {
+    //         channel.leave()
+    //     });
+
+    //     dispatcher.on('error', console.error);
+    // }
+
+
+
+    
+})
 
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     const channel = await bot.channels.fetch('722372816619569263');
@@ -260,7 +358,6 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
             channel.leave()
         }
     }
-
 })
 
 
@@ -269,12 +366,7 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
 
 bot.on( 'message' , async message => {
     let item = message.content.toLowerCase()
-    let post = {
-        item: '',
-        quantity: 0,
-        requestedBy: '',
-        completed: false
-    }
+
 
     let args = message.content.substring(PREFIX.length).split(" ");
 
@@ -334,54 +426,7 @@ bot.on( 'message' , async message => {
     
     switch(args[0].toLowerCase()){
 
-        // submits item request for request project
-        case 'request' :
 
-            message.reply("Please submit a quantity... Will expire in 10 seconds..").then(r => r.delete ({timeout: 10000})).catch(err => console.log(err))
-            message.channel.awaitMessages(filter, { max: 1, time: 10000}).then(collected => {
-                const quantity = collected.first().content
-                collected.first().delete({timeout: 1000 * 10})
-
-            // User Checks if submitted request exists and then formats request for submission.     
-            if(item !== '?request') {
-                // parses given number from string to int
-                const trueQuan = parseInt(quantity)      
-                const itemSubmit = item.replace("?request", "")
-                post.quantity = trueQuan;
-                post.requestedBy = message.author.username;
-                post.requesterId = message.author.id;
-                post.item = itemSubmit.trimStart()
-
-                axios.get(`https://xivapi.com/search?string=${post.item}&private_key=73bc4666b8044a95acbe3b469b59c0079beaf9666d164a35a68846fbd4f99f2f`)
-                .then(response => {
-                    
-                    const apiItem = response.data.Results
-                    // console.log(response.data)
-                    if(apiItem[0]){
-                        console.log(apiItem[0])
-                    post.item = apiItem[0].Name
-                    post.itemIcon = `https://xivapi.com${apiItem[0].Icon}`
-                    post.itemID = apiItem[0].ID
-                    console.log(post)
-                    // axios.post('http://localhost:8000/api/projects', post)
-                    // .then(res => message.channel.send('Request submitted now shut up \n Check status at http://localhost:3000/').then( r => r.delete ({timeout: 15000})).catch(err => console.log(err)))
-                    // .catch(err => message.channel.send('There was an error submitting your request please check request and try again.').then( r => r.delete ({timeout: 15000})).catch(err => console.log(err)))
-                    } else {
-                        message.channel.send('Cannot find item, check name submission').then( r => r.delete ({timeout: 15000})).catch(err => console.log(err))
-                    }
-                    
-                })
-                .catch(err => {
-                    message.channel.send('Cannot find item, check name submission').then( r => r.delete ({timeout: 15000})).catch(err => console.log(err))
-                })
-
-               
-            } else {
-                message.channel.send('Requests cannot be empty.').then( r => r.delete ({timeout: 15000})).catch(err => console.log(err))
-            }
-            })
-            break;
-        
         // returns a list of members in ward fc that either do or dont have the queried minion
         case 'minion' :
             message.reply("Specify True or False... Expires in 10s...").then(r => r.delete ({timeout: 10000})).catch(err => console.log(err))
@@ -525,11 +570,15 @@ bot.on( 'message' , async message => {
         case 'clear' :
             if (message.member.hasPermission("MANAGE_MESSAGES")) {
                 console.log('Action: Clearing Messages')
-                message.channel.bulkDelete(100, true)
+                message.channel.messages.fetch({limit:100})
+                .then(fetched => {
+                    const notPinned = fetched.filter( fetchedMsg => !fetchedMsg.pinned)
+                    message.channel.bulkDelete(notPinned, true)
                    .then(res => {message.channel.send(`Bulk deleted ${res.size} messages`).then( r => r.delete ({timeout: 15000})).catch(err => console.log(err))}) 
                     .catch(err => {
                     message.channel.send("Well you broke something... ").then( r => r.delete ({timeout: 15000})).catch(err => console.log(err)) 
-                    console.log(err)})                        
+                    console.log(err)})     
+                })                  
             }
             else{
                 i=0
@@ -672,25 +721,57 @@ bot.on( 'message' , async message => {
         // info for minecraft server
         case 'minecraft':
             console.log('Action: Showing Minecraft info')
+            message.delete({timeout: 1000 * 20})
             const mineEmbed = new MessageEmbed()
                 .setColor('#FFA500')
                 .setAuthor('Minecraft Server Info')
-                .setTitle('Info to setup:')
-                .setURL('https://www.curseforge.com/minecraft/modpacks/valhelsia-3')
+                // .setTitle('Info to setup:')
+                // .setURL('https://www.curseforge.com/minecraft/modpacks/all-the-mods-6/')
                 .setDescription('The following info is everything needed to join the server.')
                 .addFields(
-                    {name: 'Twitch App', value:'https://www.twitch.tv/downloads/', inline: true},
-                    {name: 'Mod Pack', value: ['Valhelsia 3', 'Choose version 3.0.14'], inline: true},
+                    {name: 'MultiMC', value:'https://multimc.org/#Download', inline: true},
+                    {name: 'Mod Pack', value: ['All The Mods 6', 'Choose version 1.3.3', 'https://www.curseforge.com/minecraft/modpacks/all-the-mods-6/download/3124239'], inline: true},
                     {name: 'Server Address', value: 'exa-li.com'},
-                    {name: 'Set Memory to atleast 7gb', value: 'https://puu.sh/GmPYE/a1780d409e.png'},
-                    {name: 'Addition Mods', value: ['https://www.curseforge.com/minecraft/mc-mods/morevanillalib/files/3003835','https://www.curseforge.com/minecraft/mc-mods/vanilla-hammers-forge/files/2991221']},
+                    {name: 'Set Memory to atleast 7gb', value: 'https://i.imgur.com/VDopARs.png'},
+                    // {name: 'Addition Mods', value: ['https://www.curseforge.com/minecraft/mc-mods/morevanillalib/files/3003835','https://www.curseforge.com/minecraft/mc-mods/vanilla-hammers-forge/files/2991221']},
                     {name: 'If you need help ping:', value: '@Exa'}
                 )
             message.reply(mineEmbed)
             break;
+        case 'reaction':
+            message.delete({timeout: 1000 * 20})
+            console.log('Action: Showing Reaction info')
+            const reactEmbed = new MessageEmbed()
+                .setColor('#FFA500')
+                .setAuthor('Role Reaction setup')
+                .setDescription('React to this message to obtain the following roles \n')
+                .addFields(
+                    {name: '<a:myDoge:791016914704269317> : to become as Dog', value:'--', inline: false},
+                    {name: '<a:mumbo:751666416335192114> : to become as Mumbo', value:'--', inline: false},
+                    {name: '<:peepo:738255120554262575> : to become as Peepo', value:'--', inline: false},
+                )
+            message.channel.send(reactEmbed).then( mes => {
+                console.log(mes)
+                mes.react(message.guild.emojis.cache.get('791016914704269317'))
+                mes.react(message.guild.emojis.cache.get('738255120554262575'))
+                mes.react(message.guild.emojis.cache.get('751666416335192114'))
+            })
+        break;
+        case 'whenfish':
+            message.delete({timeout: 1000 * 20})
+            const time = new Date()
+            const hour = time.getHours()%2
+            const minute = 60-time.getMinutes()
+            console.log(hour, minute)
+            let hourString = ''
+            let minuteString = ''
+            if(hour) hourString = `1 hour ${minute? '' : 'and'}`
+            if(minute) minuteString = `${minute} ${minute === 1 ? 'minute': 'minutes'} `
+            if(!hour && !minute){ message.reply(`Fishing boat leaving now`) }
+            else(message.reply(`Next fishing boat leaving in ${hourString} ${minuteString}`).then(r => r.delete({timeout: 20000})).catch(err => console.log(err)))
+            break;
 
-// tank :Tank~1:748933412093689889
-// dps 748933412093689889 
+
 
     }
 })
