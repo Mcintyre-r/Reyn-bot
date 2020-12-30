@@ -6,6 +6,7 @@ const CronJob = require('cron').CronJob
 const movieDB = require("./models/movie-model.js");
 const viewerDB = require("./models/viewer-model.js")
 const powerDB = require("./models/power-model.js")
+const visitorDB = require('./models/visitor-model.js')
 const VoiceText = require('voicetext')
 const fs = require('fs')
 require('ffmpeg')
@@ -89,11 +90,14 @@ bot.on('raw', async (packet) => {
 
 });
 
-const job = new CronJob('0 0 0 * * 1', async function(){
+const Monado = new CronJob('0 0 0 * * 1', async function(){
     const textChat = await bot.channels.fetch('716015727630483579')
     const monadoVid = new MessageAttachment('https://cdn.discordapp.com/attachments/407627504598253580/760254205868113940/monado.mp4')
     textChat.send(monadoVid)
     console.log('Job: MONADO MONDAYYYY')
+})
+const ClearVisits  = new CronJob('0 0 * * *', async function(){
+    await visitorDB.clearVisitors()
 })
 
 // const movieJob = new CronJob('0 0 19 * * 3', async function(){
@@ -101,7 +105,8 @@ const job = new CronJob('0 0 0 * * 1', async function(){
 //     movieChat.send('<@&761665699407200286> Movie starting in one hour!')
 // })
 
-job.start()
+Monado.start()
+ClearVisits.start()
 // movieJob.start()
 
 
@@ -250,6 +255,9 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
 })
 
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
+    // await visitorDB.clearVisitors()
+    console.log(newMember.id)
+    const visitors = await visitorDB.getVisitors()
     const channelID = '716015727630483580'
     const channel = await bot.channels.fetch(channelID)
     let date = new Date().getHours()
@@ -267,6 +275,9 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     if(Night.includes(date)) phrase = 'Fucking go to bed'
     // console.log(user.user.username)
     if(newMember.channelID === channelID && oldMember.channelID !== channelID && newMember.id != '738254569238167643'){
+        for(const visitor of visitors){ if(visitor.UID === newMember.id) return }
+        visitorDB.addVisitor(newMember.id).then(res => console.log(res)).catch(err => console.log(err))
+        // console.log(visitors)
         const user = await newMember.guild.members.fetch(newMember.id)
             voice = new VoiceText('sf3u5x3k31ybx269')
             voice
@@ -286,6 +297,8 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
                     });
                     dispatcher.on('error', console.error);
                 } )
+            
+            
     }
 
 
