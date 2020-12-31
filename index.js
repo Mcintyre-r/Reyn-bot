@@ -296,45 +296,8 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
                         channel.leave()
                     });
                     dispatcher.on('error', console.error);
-                } )
-            
-            
-    }
-
-
-
-    // if(newMember.channelID === channelID && oldMember.channelID !== channelID && newMember.id === '211556765492314112'){
-
-    //     const connection = await channel.join();
-    //     const dispatcher = connection.play(`./assets/sophia.mp3`);
-
-    //     dispatcher.on('start', () => {
-    //         console.log('Playing entrance clip');
-    //     });
-
-    //     dispatcher.on('finish', () => {
-    //         channel.leave()
-    //     });
-
-    //     dispatcher.on('error', console.error);
-    // } else if (newMember.channelID === channelID && oldMember.channelID !== channelID && newMember.id === '217362661195776002'){
-    //     const connection = await channel.join();
-    //     const dispatcher = connection.play(`./assets/megumin.mp3`);
-
-    //     dispatcher.on('start', () => {
-    //         console.log('Playing entrance clip');
-    //     });
-
-    //     dispatcher.on('finish', () => {
-    //         channel.leave()
-    //     });
-
-    //     dispatcher.on('error', console.error);
-    // }
-
-
-
-    
+                } )        
+    }  
 })
 
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
