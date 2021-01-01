@@ -255,7 +255,6 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
 })
 
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
-    // await visitorDB.clearVisitors()
     console.log(newMember.id)
     const visitors = await visitorDB.getVisitors()
     const channelID = '716015727630483580'
@@ -273,11 +272,9 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     if(Afternoon.includes(date)) phrase = 'Konnichiwa'
     if(Evening.includes(date)) phrase = 'Konbanwa'
     if(Night.includes(date)) phrase = 'Fucking go to bed'
-    // console.log(user.user.username)
     if(newMember.channelID === channelID && oldMember.channelID !== channelID && newMember.id != '738254569238167643'){
         for(const visitor of visitors){ if(visitor.UID === newMember.id) return }
         visitorDB.addVisitor(newMember.id).then(res => console.log(res)).catch(err => console.log(err))
-        // console.log(visitors)
         const user = await newMember.guild.members.fetch(newMember.id)
             voice = new VoiceText('sf3u5x3k31ybx269')
             voice
