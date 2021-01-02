@@ -3,11 +3,10 @@ const axios = require('axios')
 const bot  = new Client();
 const Queue = require('smart-request-balancer');
 const CronJob = require('cron').CronJob
-const movieDB = require("./models/movie-model.js");
-const viewerDB = require("./models/viewer-model.js")
 const powerDB = require("./models/power-model.js")
 const visitorDB = require('./models/visitor-model.js')
 const VoiceText = require('voicetext')
+
 const fs = require('fs')
 require('ffmpeg')
 require('ffmpeg-static')
@@ -56,39 +55,6 @@ bot.on('ready', async () =>{
     console.log('Exa-Bot Online')
 })
 
-// test role handler for other bot
-bot.on('raw', async (packet) => {
-    if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t) || packet.d.message_id !== '791040740268179517') return;
-    
-    const channel = await bot.channels.fetch(packet.d.channel_id);
-    const message = await channel.messages.fetch(packet.d.message_id);
-    const roles = {
-        '791016914704269317' : 'test1',
-        '751666416335192114' : 'test2',
-        '738255120554262575' : 'test3',
-    }
-    const keys = Object.keys(roles)
-
-    if(!keys.includes(packet.d.emoji.id)){
-        message.reactions.cache.each( react =>{
-            if(!keys.includes(react._emoji.id)){
-                react.remove()
-            }
-        })
-        packet.t === 'MESSAGE_REACTION_ADD' ? message.reactions.cache.get(packet.d.emoji.id).remove().catch(error => console.error('Failed to remove reactions: ', error)): null;
-        return;
-    }
-
-    const user = await message.guild.members.fetch(packet.d.user_id)
-    const role = message.guild.roles.cache.find(role => role.name === roles[packet.d.emoji.id]);
-    if(packet.t === 'MESSAGE_REACTION_ADD'){
-        user.roles.add(role)
-    } else if (packet.t === 'MESSAGE_REACTION_REMOVE'){
-        user.roles.remove(role)
-    }
-
-});
-
 const Monado = new CronJob('0 0 0 * * 1', async function(){
     const textChat = await bot.channels.fetch('716015727630483579')
     const monadoVid = new MessageAttachment('https://cdn.discordapp.com/attachments/407627504598253580/760254205868113940/monado.mp4')
@@ -99,16 +65,11 @@ const ClearVisits  = new CronJob('0 0 * * *', async function(){
     await visitorDB.clearVisitors()
 })
 
-// const movieJob = new CronJob('0 0 19 * * 3', async function(){
-//     const movieChat = await bot.channels.fetch('761671840845791242')
-//     movieChat.send('<@&761665699407200286> Movie starting in one hour!')
-// })
-
 Monado.start()
 ClearVisits.start()
-// movieJob.start()
 
 
+// Watches chat for keywords to trigger voice clips
 bot.on('message',async req => {
 
     const attachment = new MessageAttachment('https://cdn.discordapp.com/attachments/313148981502935040/697154625815707798/image0.gif');
@@ -216,6 +177,7 @@ bot.on('message',async req => {
     }
 })
 
+// Monitors members in voice, and handles assignment of voicechatter role
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     const channel = await bot.channels.fetch('716015727630483580');
     const raidChannel = await bot.channels.fetch('747097374312103977');
@@ -253,6 +215,7 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     }
 })
 
+// Time adjusted TTS greeter
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     console.log(newMember.id)
     const visitors = await visitorDB.getVisitors()
@@ -296,6 +259,7 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     }  
 })
 
+// Initial D-tention bot
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     const channel = await bot.channels.fetch('722372816619569263');
     const choices = ['./assets/deja.mp3','./assets/burn.mp3','./assets/kill.mp3','./assets/rem.mp3','./assets/gas.mp3','./assets/night.mp3','./assets/run.mp3']
@@ -332,10 +296,7 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     }
 })
 
-
-
-
-
+// Bot Command Switchboard
 bot.on( 'message' , async message => {
     let item = message.content.toLowerCase()
 
@@ -483,11 +444,11 @@ bot.on( 'message' , async message => {
                 message.channel.send('Please Wait I\'m doing my best...').then( r => r.delete ({timeout: 40000})).catch(err => console.log(err))
 
                 let expectedIDs = [];
-                await axios.get('https://xivapi.com/freecompany/9232519973597979666?data=FCM&private_key=73bc4666b8044a95acbe3b469b59c0079beaf9666d164a35a68846fbd4f99f2f')
+                await axios.get('https://xivapi.com/freecompany/9232519973597979666?data=FCM&private_key=2d365f381e0b4573ba73e18cab4b481f4e9df8895dec44de94a2bfbd10682a6b')
                 .then(members => {
                     members.data.FreeCompanyMembers.forEach(member => {
                             expectedIDs.push(member.ID)
-                            queue.request((retry) => axios.get(`https://xivapi.com/character/${member.ID}?data=MIMO&private_key=73bc4666b8044a95acbe3b469b59c0079beaf9666d164a35a68846fbd4f99f2f`)
+                            queue.request((retry) => axios.get(`https://xivapi.com/character/${member.ID}?data=MIMO&private_key=2d365f381e0b4573ba73e18cab4b481f4e9df8895dec44de94a2bfbd10682a6b`)
                             .then(mounts => {
                                 let hasMount = false
                                 if(mounts.data.Mounts.length == 0){
@@ -530,7 +491,8 @@ bot.on( 'message' , async message => {
         
                         })
 
-                })   
+                })
+                .catch(err => console.log(err)) 
                 
             }
             else{
@@ -597,99 +559,6 @@ bot.on( 'message' , async message => {
             }
             break; 
 
-        // creates a movie event 
-        case 'setevent':
-            movieDB.checkEvent().then(currentEvent => {
-                message.reply("Please submit a time... Will expire in 10 seconds..").then(r => r.delete ({timeout: 10000})).catch(err => console.log(err))
-                message.channel.awaitMessages(filter, { max: 1, time: 10000}).then(collected => {
-                    const time = collected.first().content
-                    collected.first().delete({timeout: 1000 * 10})
-                    if(currentEvent[0]['Title'] == 'None'){
-                        if(item !== '?setevent') {
-                            message.delete({timeout: 1000 * 20})
-                            const rec = message.content.replace("?setevent ", "")
-                            const event = {}
-                            event['Title'] = rec
-                            event['Time'] = time
-                            movieDB.updateEvent(event).then(res => console.log(res)).catch(err => console.log(err))
-                            message.reply("Record has been updated").then( r => r.delete ({timeout: 20000})).catch(err => console.log(err)) 
-                        }
-                        else{
-                            message.reply("Please include a title for the event").then( r => r.delete ({timeout: 20000})).catch(err => console.log(err)) 
-                        } 
-                    } else {
-                        message.reply("There is already a pending event").then( r => r.delete ({timeout: 20000})).catch(err => console.log(err))
-                    }
-                })
-            }).catch(err => console.log(err))
-            break;
-        
-        // registers user for movie event, and gives them the appropriate role
-        case 'signup':
-            // console.log(event)
-            movieDB.checkEvent().then(event => {
-                let signedup = false
-                viewerDB.getViewers().then(res => {
-                    for(let viewer of res){
-                    if(message.author.id == viewer["UID"]){ 
-                        signedup = true
-                    }}
-                    
-                    if(event[0]['Title'] == 'None'){
-                        message.reply('There is no event pending atm').then( r => r.delete ({timeout: 20000})).catch(err => console.log(err)) 
-                    }
-                    else if(signedup == true){
-                        message.reply('You are already signed up for this event.').then( r => r.delete ({timeout: 20000})).catch(err => console.log(err))
-                    }
-                    else {
-                            // event['viewer'].push(message.author.id)
-                            viewerDB.addViewer(message.author.id).then(res => console.log(res)).catch(err => console.log(err))
-                            const user = message.guild.members.cache.get(message.author.id)
-                            const role = message.guild.roles.cache.find(role => role.name === 'Signed up for Movie');
-                            user.roles.add(role)
-                            message.reply("You are registered for the movie").then( r => r.delete ({timeout: 20000})).catch(err => console.log(err)) 
-
-                    }
-                }).catch(err => console.log(err))
-            }).catch(err => console.log(err))
-            break;
-        
-        // clears any pending event and resets roles
-        case 'resolve':
-            message.delete({timeout: 1000 * 20})
-            movieDB.checkEvent().then(event => {
-                if(event[0]["Title"] != 'None'){
-                    // console.log(message.guild.members.cache.keys())
-                    for(let i of message.guild.members.cache.keys()){
-                        const user = message.guild.members.cache.get(i)
-                        const role = message.guild.roles.cache.find(role => role.name === 'Signed up for Movie');
-                        user.roles.remove(role)
-                    }
-                    
-                    movieDB.updateEvent({"Title":"None","Time":"None"}).then(res => console.log(res)).catch(err => console.log(err))
-                    viewerDB.clearViewers().then(res => console.log(res)).catch(err => console.log(err))
-                    viewerDB.addViewer("59423394055069696").then(res => console.log(res)).catch(err => console.log(err))
-                    message.reply("Event has been cleared").then( r => r.delete ({timeout: 20000})).catch(err => console.log(err))
-                } else {
-                    message.reply("There is no pending event").then( r => r.delete ({timeout: 20000})).catch(err => console.log(err))
-                }
-            }).catch(err => console.log(err))
-            
-            break;
-
-        // info about currently pending movie event
-        case 'movie':
-                message.delete({timeout: 1000 * 20})
-                movieDB.checkEvent()
-                    .then(res => {
-                        if(res[0]['Title'] != 'None'){
-                            message.reply(`Upcoming Movie is ${res[0]['Title']}, at ${res[0]['Time']}`).then( r => r.delete ({timeout: 20000})).catch(err => console.log(err))
-                            } else {
-                                message.reply("There is no pending event").then( r => r.delete ({timeout: 20000})).catch(err => console.log(err))
-                            }
-                    })  
-            break;
-
         // info for minecraft server
         case 'minecraft':
             console.log('Action: Showing Minecraft info')
@@ -707,43 +576,6 @@ bot.on( 'message' , async message => {
                 )
             message.reply(mineEmbed)
             break;
-        // test for role reaction for other bot
-        case 'reaction':
-            message.delete({timeout: 1000 * 20})
-            console.log('Action: Showing Reaction info')
-            const reactEmbed = new MessageEmbed()
-                .setColor('#FFA500')
-                .setAuthor('Role Reaction setup')
-                .setDescription('React to this message to obtain the following roles \n')
-                .addFields(
-                    {name: '<a:myDoge:791016914704269317> : to become as Dog', value:'--', inline: false},
-                    {name: '<a:mumbo:751666416335192114> : to become as Mumbo', value:'--', inline: false},
-                    {name: '<:peepo:738255120554262575> : to become as Peepo', value:'--', inline: false},
-                )
-            message.channel.send(reactEmbed).then( mes => {
-                console.log(mes)
-                mes.react(message.guild.emojis.cache.get('791016914704269317'))
-                mes.react(message.guild.emojis.cache.get('738255120554262575'))
-                mes.react(message.guild.emojis.cache.get('751666416335192114'))
-            })
-        break;
-        // test for fishing timer on  other bot
-        case 'whenfish':
-            message.delete({timeout: 1000 * 20})
-            const time = new Date()
-            const hour = time.getHours()%2
-            const minute = 60-time.getMinutes()
-            console.log(hour, minute)
-            let hourString = ''
-            let minuteString = ''
-            if(hour) hourString = `1 hour ${minute? '' : 'and'}`
-            if(minute) minuteString = `${minute} ${minute === 1 ? 'minute': 'minutes'} `
-            if(!hour && !minute){ message.reply(`Fishing boat leaving now`) }
-            else(message.reply(`Next fishing boat leaving in ${hourString} ${minuteString}`).then(r => r.delete({timeout: 20000})).catch(err => console.log(err)))
-            break;
-
-
-
     }
 })
 
