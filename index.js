@@ -16,24 +16,23 @@ require('dotenv').config()
 
 // Queue for handling api requests
 const queue = new Queue({
-    rules: {                     // Describing our rules by rule name
-      common: {                  // Common rule. Will be used if you won't provide rule argument
-        rate: 10,                // Allow to send 10 messages
-        limit: 1,                // per 1 second
-        priority: 1,             // Rule priority. The lower priority is, the higher chance that
-                                 // this rule will execute faster 
+    rules: {                     
+      common: {                  
+        rate: 10,                
+        limit: 1,                
+        priority: 1,                                           
       }
     },
-    default: {                   // Default rules (if provided rule name is not found)
+    default: {                   
       rate: 10,
       limit: 1
     },
-    overall: {                   // Overall queue rates and limits
+    overall: {                   
       rate: 10,
       limit: 1
     },
-    retryTime: 10,              // Default retry time, in seconds. Can be configured in retry fn
-    ignoreOverallOverheat: true  // Should we ignore overheat of queue itself
+    retryTime: 10,              
+    ignoreOverallOverheat: true  
 })
 
 // Compare function to sort
@@ -57,7 +56,7 @@ bot.on('ready', async () =>{
     console.log('Exa-Bot Online')
 })
 
-
+// test role handler for other bot
 bot.on('raw', async (packet) => {
     if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t) || packet.d.message_id !== '791040740268179517') return;
     
@@ -698,19 +697,17 @@ bot.on( 'message' , async message => {
             const mineEmbed = new MessageEmbed()
                 .setColor('#FFA500')
                 .setAuthor('Minecraft Server Info')
-                // .setTitle('Info to setup:')
-                // .setURL('https://www.curseforge.com/minecraft/modpacks/all-the-mods-6/')
                 .setDescription('The following info is everything needed to join the server.')
                 .addFields(
                     {name: 'MultiMC', value:'https://multimc.org/#Download', inline: true},
                     {name: 'Mod Pack', value: ['All The Mods 6', 'Choose version 1.3.3', 'https://www.curseforge.com/minecraft/modpacks/all-the-mods-6/download/3124239'], inline: true},
                     {name: 'Server Address', value: 'exa-li.com'},
                     {name: 'Set Memory to atleast 7gb', value: 'https://i.imgur.com/VDopARs.png'},
-                    // {name: 'Addition Mods', value: ['https://www.curseforge.com/minecraft/mc-mods/morevanillalib/files/3003835','https://www.curseforge.com/minecraft/mc-mods/vanilla-hammers-forge/files/2991221']},
                     {name: 'If you need help ping:', value: '@Exa'}
                 )
             message.reply(mineEmbed)
             break;
+        // test for role reaction for other bot
         case 'reaction':
             message.delete({timeout: 1000 * 20})
             console.log('Action: Showing Reaction info')
@@ -730,6 +727,7 @@ bot.on( 'message' , async message => {
                 mes.react(message.guild.emojis.cache.get('751666416335192114'))
             })
         break;
+        // test for fishing timer on  other bot
         case 'whenfish':
             message.delete({timeout: 1000 * 20})
             const time = new Date()
