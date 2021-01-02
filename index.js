@@ -61,7 +61,7 @@ const Monado = new CronJob('0 0 0 * * 1', async function(){
     textChat.send(monadoVid)
     console.log('Job: MONADO MONDAYYYY')
 })
-const ClearVisits  = new CronJob('0 0 * * *', async function(){
+const ClearVisits  = new CronJob('0 0 * * * *', async function(){
     await visitorDB.clearVisitors()
 })
 
@@ -180,7 +180,7 @@ bot.on('message',async req => {
 // Monitors members in voice, and handles assignment of voicechatter role
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     const channel = await bot.channels.fetch('716015727630483580');
-    const raidChannel = await bot.channels.fetch('747097374312103977');
+    
     const privateChannel = await bot.channels.fetch('766209336615370782');
     const textChannel = await bot.channels.fetch('753831898559545384');
     const role = channel.guild.roles.cache.find(role => role.name === 'Voice');
@@ -189,9 +189,6 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
     console.log('Action: Adding and Removing Roles')
     for(let e of channel.guild.members.cache.keys()){
         serverMembers.push(e)
-    }
-    for(let e of raidChannel.members.keys()){
-        channelMembers.push(e)
     }
     for(let e of privateChannel.members.keys()){
         channelMembers.push(e)
@@ -217,7 +214,6 @@ bot.on('voiceStateUpdate', async (oldMember, newMember) => {
 
 // Time adjusted TTS greeter
 bot.on('voiceStateUpdate', async (oldMember, newMember) => {
-    console.log(newMember.id)
     const visitors = await visitorDB.getVisitors()
     const channelID = '716015727630483580'
     const channel = await bot.channels.fetch(channelID)
