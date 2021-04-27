@@ -23,7 +23,7 @@
     "knex": "^0.21.6",
     "nodemon": "^2.0.2",
     "pg": "^8.4.0",
-    "redis": "^3.0.2",
+    "redis": "^3.1.1",
     "request-rate-limiter": "^2.0.3",
     "smart-request-balancer": "^2.1.1",
     "voicetext": "0.0.7",
